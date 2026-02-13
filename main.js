@@ -1,12 +1,37 @@
 const { app, BrowserWindow, session, WebContentsView, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
+
+function getWindowStatePath() {
+  return path.join(app.getPath('userData'), 'window-state.json');
+}
+
+function readWindowState() {
+  try {
+    const p = getWindowStatePath();
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeWindowState(state) {
+  try {
+    const p = getWindowStatePath();
+    fs.writeFileSync(p, JSON.stringify(state, null, 2), 'utf8');
+  } catch {
+    // intentionally ignore write errors
+  }
+}
 
 const ADMIN_PARTITION = 'persist:admin-centers';
 
+
 function createWindow() {
+  const saved = readWindowState();
+
   const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    ...(saved?.bounds ? saved.bounds : { width: 1200, height: 800 }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -15,7 +40,13 @@ function createWindow() {
     }
   });
 
-  win.loadFile('index.html');
+  // If it was maximized last time, re-maximize after creation
+  if (saved?.isMaximized) {
+    win.maximize();
+  }
+
+  win.loadFile('index.html')
+
   win.webContents.openDevTools({ mode: 'detach' });
 
   // Create the embedded content view (below the toolbar)
@@ -41,6 +72,27 @@ function createWindow() {
   win.on('unmaximize', layout);
   layout();
 
+
+  let lastNormalBounds = saved?.bounds || win.getBounds();
+
+  const updateNormalBounds = () => {
+    if (!win.isMaximized() && !win.isMinimized() && !win.isFullScreen()) {
+      lastNormalBounds = win.getBounds();
+    }
+  };
+
+  win.on('resize', updateNormalBounds);
+  win.on('move', updateNormalBounds);
+
+  win.on('close', () => {
+    // Save normal bounds + maximize state
+    const state = {
+      bounds: lastNormalBounds,
+      isMaximized: win.isMaximized()
+    };
+    writeWindowState(state);
+  });
+
   // Initial navigation
   adminView.webContents.loadURL('https://admin.microsoft.com/AdminPortal/');
 
@@ -48,7 +100,6 @@ function createWindow() {
   ipcMain.on('navigate-admin', (_evt, url) => {
     adminView.webContents.loadURL(url);
   });
-
 
   // --- tenant prompt (modal window) ---
   ipcMain.handle('prompt-sharepoint-tenant', async (_evt, initialValue) => {
