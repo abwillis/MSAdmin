@@ -105,17 +105,24 @@ function createWindow() {
   ipcMain.handle('prompt-sharepoint-tenant', async (_evt, initialValue) => {
     return await openTenantPrompt(win, initialValue || '');
   });
+
+  ipcMain.handle('prompt-onprem-exchange', async (_evt, initialValue) => {
+    return await openGenericPrompt(win, {
+      title: 'On-Prem Exchange EAC URL',
+      label: 'Enter the on-prem EAC/ECP URL (example: https://mail.contoso.com/ecp)',
+      value: initialValue || ''
+    });
+  });
 }
 
-
 // Modal prompt helper
-function openTenantPrompt(parentWindow, initialValue) {
+function openGenericPrompt(parentWindow, { title, label, hint, value }) {
   return new Promise((resolve) => {
     const promptWin = new BrowserWindow({
       parent: parentWindow,
       modal: true,
       width: 560,
-      height: 220,
+      height: 240,
       resizable: false,
       minimizable: false,
       maximizable: false,
@@ -128,16 +135,14 @@ function openTenantPrompt(parentWindow, initialValue) {
       }
     });
 
-    const reply = (value) => {
-      resolve(value);
-      if (!promptWin.isDestroyed()) promptWin.close();
-    };
-
-    ipcMain.once('tenant-prompt-result', (_e, value) => reply(value));
+    const reply = (val) => { resolve(val); if (!promptWin.isDestroyed()) promptWin.close(); };
+    ipcMain.once('tenant-prompt-result', (_e, val) => reply(val));
     promptWin.on('closed', () => resolve(null));
-
     promptWin.once('ready-to-show', () => promptWin.show());
-    promptWin.loadFile('tenantPrompt.html', { query: { value: initialValue } });
+
+    promptWin.loadFile('tenantPrompt.html', {
+      query: { title, label, hint: hint || '', value: value || '' }
+    });
   });
 }
 

@@ -39,14 +39,19 @@
     <button data-url="https://security.microsoft.com">Defender</button>
     <button data-url="https://purview.microsoft.com">Purview</button>
 
-    <!-- NEW: SharePoint (tenant-configurable) -->
+    <!-- SharePoint (tenant-configurable) -->
     <button id="sharepointBtn" type="button">SharePoint</button>
     <span id="spTenantLabel" class="muted"></span>
 
+    <!-- OnPrem Exchange: configurable -->
+    <button id="onPremExchangeBtn" type="button">On‑Prem Exchange</button>
+    <span id="onPremExchangeLabel" class="muted"></span>
+
     <div class="spacer"></div>
 
-    <!-- NEW: simple settings control -->
+    <!-- simple settings control -->
     <button id="spSettingsBtn" type="button" title="Set SharePoint tenant">⚙ SharePoint tenant</button>
+    <button id="onPremExchangeSettingsBtn" type="button" title="Set On‑Prem Exchange URL">⚙ On‑Prem EAC</button>
   </div>
 
   <script>
@@ -120,6 +125,45 @@
     });
 
     renderTenantLabel();
+
+    const ONPREM_EAC_KEY = 'onPremEacUrl';
+    const onPremExchangeBtn = document.getElementById('onPremExchangeBtn');
+    const onPremExchangeSettingsBtn = document.getElementById('onPremExchangeSettingsBtn');
+    const onPremExchangeLabel = document.getElementById('onPremExchangeLabel');
+
+    function getOnPremEacUrl() {
+      return localStorage.getItem(ONPREM_EAC_KEY) || '';
+    }
+    function setOnPremEacUrl(url) {
+      if (!url) localStorage.removeItem(ONPREM_EAC_KEY);
+      else localStorage.setItem(ONPREM_EAC_KEY, url);
+      renderOnPremLabel();
+    }
+    function renderOnPremLabel() {
+      const url = getOnPremEacUrl();
+      onPremExchangeLabel.textContent = url ? `(${url})` : `(not set)`;
+    }
+
+    async function promptForOnPremEac() {
+      const existing = getOnPremEacUrl();
+      const raw = await window.adminNav.promptOnPremExchange(existing);
+      if (raw === null) return ''; // cancelled
+      const url = String(raw).trim();
+      setOnPremEacUrl(url);
+      return url;
+    }
+
+    onPremExchangeBtn.addEventListener('click', async () => {
+      let url = getOnPremEacUrl();
+      if (!url) url = await promptForOnPremEac();
+      if (url) window.adminNav.go(url);
+    });
+
+    onPremExchangeSettingsBtn.addEventListener('click', async () => {
+      await promptForOnPremEac();
+    });
+
+    renderOnPremLabel();
   </script>
 </body>
 </html>

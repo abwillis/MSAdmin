@@ -26,6 +26,11 @@
 
   <script>
     const params = new URLSearchParams(location.search);
+    document.title = params.get('title') || document.title;
+    document.querySelector('label').textContent = params.get('label') || document.querySelector('label').textContent;
+    const hint = params.get('hint');
+    if (hint) document.querySelector('.hint').textContent = hint;
+
     const initial = params.get('value') || '';
     const input = document.getElementById('tenant');
     input.value = initial;
