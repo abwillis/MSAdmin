@@ -2,6 +2,23 @@ const { app, BrowserWindow, session, WebContentsView, ipcMain } = require('elect
 const path = require('path');
 const fs = require('fs');
 
+function getAppIcon() {
+  if (process.platform === 'win32') {
+    return path.join(__dirname, 'assets', 'win', 'msadmin_center-for-linux.ico');
+  }
+
+  if (process.platform === 'linux') {
+    // Use the largest size for the window icon
+    return path.join(
+      __dirname,
+      'assets',
+      'msadmin_center-for-linux_1024x1024.png'
+    );
+  }
+
+  return undefined; // macOS handled differently (if added later)
+}
+
 function getWindowStatePath() {
   return path.join(app.getPath('userData'), 'window-state.json');
 }
@@ -32,6 +49,7 @@ function createWindow() {
 
   const win = new BrowserWindow({
     ...(saved?.bounds ? saved.bounds : { width: 1200, height: 800 }),
+   icon: getAppIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -146,7 +164,9 @@ function openGenericPrompt(parentWindow, { title, label, hint, value }) {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
