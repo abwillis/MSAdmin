@@ -65,8 +65,6 @@ function createWindow() {
 
   win.loadFile('index.html')
 
-  win.webContents.openDevTools({ mode: 'detach' });
-
   // Create the embedded content view (below the toolbar)
   const adminView = new WebContentsView({
     webPreferences: {
