@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SharePoint tenant</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; margin: 16px; }
+    label { display:block; margin-bottom: 8px; font-weight: 600; }
+    input { width: 100%; padding: 10px; font-size: 14px; box-sizing: border-box; }
+    .hint { color:#666; font-size:12px; margin-top:6px; }
+    .row { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+    button { padding: 8px 12px; border:1px solid #ccc; background:#fff; border-radius:6px; cursor:pointer; }
+    button:hover { background:#f0f0f0; }
+  </style>
+</head>
+<body>
+  <label for="tenant">Tenant prefix or full SharePoint admin URL</label>
+  <input id="tenant" autocomplete="off"
+         placeholder='e.g. contoso  OR  https://contoso-admin.sharepoint.com' />
+  <div class="hint">SharePoint admin center format: https://&lt;tenant&gt;-admin.sharepoint.com</div>
+
+  <div class="row">
+    <button id="cancel">Cancel</button>
+    <button id="ok">OK</button>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const initial = params.get('value') || '';
+    const input = document.getElementById('tenant');
+    input.value = initial;
+    input.focus();
+
+    document.getElementById('ok').addEventListener('click', () => window.tenantPrompt.submit(input.value));
+    document.getElementById('cancel').addEventListener('click', () => window.tenantPrompt.cancel());
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') window.tenantPrompt.submit(input.value);
+      if (e.key === 'Escape') window.tenantPrompt.cancel();
+    });
+  </script>
+</body>
+</html>

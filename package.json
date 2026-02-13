@@ -1,0 +1,98 @@
+{
+  "name": "MSAdmin_Center-for-linux",
+  "version": "1.10.4",
+  "description": "MSAdmin Center for Linux",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --linux rpm",
+    "dist:win": "electron-builder --win nsis portable"
+  },
+  "build": {
+    "appId": "com.company.MSAdmin",
+    "productName": "msadmin_center-for-linux",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "asarUnpack": [
+      "**/*.node",
+      "vendor/**",
+      "resources/**",
+      "assets/*.png",
+      "assets/*.ico"
+    ],
+    "linux": {
+      "executableName": "msadmin_center-for-linux",
+      "target": [
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "icon": "assets",
+      "maintainer": "Name <name@mail.com>",
+      "vendor": "Name <name@mail.com>",
+      "synopsis": "MSAdmin Center Electron App",
+      "description": "MSAdmmin Center for Linux",
+      "desktop": {
+        "entry": {
+          "Name": "msadmin_center-for-linux",
+          "Icon": "msadmin_center-for-linux",
+          "Type": "Application",
+          "Comment": "Unofficial Microsoft MSAdmin Center client for Linux using Electron. It uses the Web App and wraps it as a standalone application using Electron.",
+          "StartupWMClass": "msadmin_center-for-linux",
+          "Categories": "Network;Utility;Productivity"
+        }
+      }
+    },
+    "rpm": {
+      "artifactName": "${name}-${version}.${arch}.rpm",
+      "compression": "bzip2"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "cscLink": "C:/apps/certs/my_code_sign.pfx",
+      "cscKeyPassword": "WhatsnextforYou",
+      "icon": "assets/icon.ico",
+      "artifactName": "${productName}-${version}-Windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "copilot-for-linux",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerSidebar": null,
+      "uninstallerSidebar": null
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable-${arch}.${ext}"
+    }
+  },
+  "homepage": "https://yourwebsite.com",
+  "author": {
+    "name": "Name",
+    "email": "name@mail.com"
+  },
+  "license": "BSD 3-Clause License",
+  "devDependencies": {
+    "electron": "^40.4.0",
+    "electron-builder": "^26.4.0"
+  },
+  "dependencies": {
+    "npm": "^11.7.0"
+  }
+}

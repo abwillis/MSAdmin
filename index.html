@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Center Launcher</title>
+  <style>
+    body { margin: 0; font-family: Segoe UI, Arial, sans-serif; }
+    #toolbar {
+      height: 56px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      box-sizing: border-box;
+      border-bottom: 1px solid #ddd;
+      background: #f7f7f7;
+    }
+    button {
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover { background: #f0f0f0; }
+    .muted { color: #666; font-size: 12px; margin-left: 6px; }
+    .spacer { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button data-url="https://admin.microsoft.com/AdminPortal/">M365</button>
+    <button data-url="https://admin.cloud.microsoft/exchange">Exchange</button>
+    <button data-url="https://entra.microsoft.com/">Entra</button>
+    <button data-url="https://admin.teams.microsoft.com">Teams</button>
+    <button data-url="https://security.microsoft.com">Defender</button>
+    <button data-url="https://purview.microsoft.com">Purview</button>
+
+    <!-- NEW: SharePoint (tenant-configurable) -->
+    <button id="sharepointBtn" type="button">SharePoint</button>
+    <span id="spTenantLabel" class="muted"></span>
+
+    <div class="spacer"></div>
+
+    <!-- NEW: simple settings control -->
+    <button id="spSettingsBtn" type="button" title="Set SharePoint tenant">⚙ SharePoint tenant</button>
+  </div>
+
+  <script>
+    // existing buttons
+    document.querySelectorAll('#toolbar button[data-url]').forEach(btn => {
+      btn.addEventListener('click', () => window.adminNav.go(btn.dataset.url));
+    });
+
+    // SharePoint tenant handling
+    const SP_TENANT_KEY = 'spTenantPrefix'; // ex: "contoso"
+    const sharepointBtn = document.getElementById('sharepointBtn');
+    const spSettingsBtn = document.getElementById('spSettingsBtn');
+    const spTenantLabel = document.getElementById('spTenantLabel');
+
+    function normalizeTenant(input) {
+      if (!input) return '';
+      let t = String(input).trim();
+
+      // allow user to paste full URL; extract "<tenant>" from https://<tenant>-admin.sharepoint.com
+      const m = t.match(/^https?:\/\/([^\/]+)-admin\.sharepoint\.com/i);
+      if (m && m[1]) return m[1].toLowerCase();
+
+      // strip common suffixes if someone pastes "contoso-admin.sharepoint.com"
+      t = t.replace(/-admin\.sharepoint\.com\/?.*$/i, '');
+      t = t.replace(/^https?:\/\//i, '');
+      t = t.replace(/\/.*$/,'');
+      return t.toLowerCase();
+    }
+
+    function getTenant() {
+      return localStorage.getItem(SP_TENANT_KEY) || '';
+    }
+
+    function setTenant(t) {
+      if (!t) {
+        localStorage.removeItem(SP_TENANT_KEY);
+      } else {
+        localStorage.setItem(SP_TENANT_KEY, t);
+      }
+      renderTenantLabel();
+    }
+
+    function renderTenantLabel() {
+      const t = getTenant();
+      spTenantLabel.textContent = t ? `(${t}-admin.sharepoint.com)` : `(tenant not set)`;
+    }
+
+    function sharePointUrl(tenantPrefix) {
+      // Tenant-specific SharePoint admin center URL format [1](https://www.sharepointdiary.com/2019/06/sharepoint-online-get-admin-center-site-url.html)[2](https://support.cloudm.io/hc/en-us/articles/21799709777180-How-to-find-the-SharePoint-Admin-Url)
+      return `https://${tenantPrefix}-admin.sharepoint.com`;
+    }
+
+    async function promptForTenant() {
+      const existing = getTenant();
+      const raw = await window.adminNav.promptSharePointTenant(existing);
+      if (raw === null) return ''; // cancelled
+
+      const t = normalizeTenant(raw);
+      setTenant(t);
+      return t;
+    }
+
+    sharepointBtn.addEventListener('click', async () => {
+      let t = getTenant();
+      if (!t) t = await promptForTenant();
+      if (t) window.adminNav.go(`https://${t}-admin.sharepoint.com`);
+    });
+
+    spSettingsBtn.addEventListener('click', async () => {
+      await promptForTenant();
+    });
+
+    renderTenantLabel();
+  </script>
+</body>
+</html>
