@@ -1,6 +1,40 @@
-const { app, BrowserWindow, session, WebContentsView, ipcMain } = require('electron');
+const { app, BrowserWindow, session, WebContentsView, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+function attachContextMenuCopyReload(wc) {
+  // Avoid duplicate menus if this function is called more than once for the same webContents.
+  if (wc.__msadminContextMenuAttached) return;
+  wc.__msadminContextMenuAttached = true;
+
+  wc.on('context-menu', (_event, params) => {
+    const template = [];
+
+    // Preserve "existing" expected items when right-clicking in editable fields:
+    // Cut/Copy/Paste/Select All (based on what Chromium says is available).
+    const ef = params.editFlags || {};
+
+    if (ef.canCut) template.push({ label: 'Cut', role: 'cut' });
+
+    // Copy should be available when there's selection OR canCopy is true.
+    if (ef.canCopy || (params.selectionText && params.selectionText.trim().length > 0)) {
+      template.push({ label: 'Copy', role: 'copy' });
+    }
+
+    if (ef.canPaste) template.push({ label: 'Paste', role: 'paste' });
+
+    if (ef.canSelectAll) template.push({ type: 'separator' }, { label: 'Select All', role: 'selectAll' });
+
+    // Add Reload without removing anything else.
+    if (template.length > 0) template.push({ type: 'separator' });
+    template.push({
+      label: 'Reload',
+      click: () => wc.reload()
+    });
+
+    Menu.buildFromTemplate(template).popup();
+  });
+}
 
 function getAppIcon() {
   if (process.platform === 'win32') {
@@ -41,6 +75,25 @@ function writeWindowState(state) {
   }
 }
 
+function attachCopyReloadContextMenu(wc) {
+  wc.on('context-menu', (_event, params) => {
+    const template = [];
+
+    // Show Copy when there is selected text
+    if (params.selectionText && params.selectionText.trim().length > 0) {
+      template.push({ label: 'Copy', role: 'copy' });
+      template.push({ type: 'separator' });
+    }
+
+    template.push({
+      label: 'Reload',
+      click: () => wc.reload()
+    });
+
+    Menu.buildFromTemplate(template).popup();
+  });
+}
+
 const ADMIN_PARTITION = 'persist:admin-centers';
 
 
@@ -74,6 +127,10 @@ function createWindow() {
       sandbox: true
     }
   });
+
+  // Right-click context menus (Copy + Reload) for both the UI chrome and the embedded admin view.
+  attachContextMenuCopyReload(win.webContents);
+  attachContextMenuCopyReload(adminView.webContents);
 
   win.contentView.addChildView(adminView);
 
