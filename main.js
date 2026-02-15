@@ -240,7 +240,7 @@ function createWindow() {
 
   // --- tenant prompt (modal window) ---
   ipcMain.handle('prompt-sharepoint-tenant', async (_evt, initialValue) => {
-    return await openTenantPrompt(win, initialValue || '');
+    return await openGenericPrompt(win, initialValue || '');
   });
 
   ipcMain.handle('prompt-onprem-exchange', async (_evt, initialValue) => {
