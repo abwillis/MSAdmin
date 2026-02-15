@@ -1,6 +1,68 @@
-const { app, BrowserWindow, session, WebContentsView, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, session, WebContentsView, ipcMain, Menu, MenuItem, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+// --- Help → About (mirrors main2.js behavior) -------------------------------
+function showAboutDialog(parentWindow) {
+  const v = process.versions || {};
+  const iconPath = getAppIcon();
+  const iconImg = iconPath ? nativeImage.createFromPath(iconPath) : undefined;
+
+  const detail =
+    `Version: ${app.getVersion()}\n` +
+    `Node: ${v.node || 'unknown'}\n` +
+    `V8: ${v.v8 || 'unknown'}\n` +
+    `Electron: ${v.electron || 'unknown'}\n` +
+    `Chromium: ${v.chrome || 'unknown'}`;
+
+  dialog.showMessageBox(parentWindow, {
+    type: 'info',
+    title: `About ${app.getName()}`,
+    message: app.getName(),
+    detail,
+    icon: iconImg,
+    buttons: ['OK'],
+    defaultId: 0
+  });
+}
+
+function extendMenuWithAbout(getMainWindow) {
+  let menu = Menu.getApplicationMenu();
+
+  // Create menu if it does not exist yet
+  if (!menu) {
+    menu = new Menu();
+    Menu.setApplicationMenu(menu);
+  }
+
+  // Find or create Help submenu
+  let helpItem = menu.items.find(i => i.label === 'Help');
+  let helpSubmenu;
+
+  if (helpItem && helpItem.submenu) {
+    helpSubmenu = helpItem.submenu;
+  } else {
+    helpSubmenu = new Menu();
+    menu.append(new MenuItem({ label: 'Help', submenu: helpSubmenu }));
+  }
+
+  // Avoid duplicate About
+  const hasAbout = helpSubmenu.items.some(i => i.label === 'About');
+  if (!hasAbout) {
+    helpSubmenu.append(new MenuItem({
+      label: 'About',
+      click: () => {
+        const win = typeof getMainWindow === 'function'
+          ? getMainWindow()
+          : undefined;
+        showAboutDialog(win);
+      }
+    }));
+  }
+
+  // Re-apply so Linux DEs refresh the menu
+  Menu.setApplicationMenu(menu);
+}
 
 function attachContextMenuCopyReload(wc) {
   // Avoid duplicate menus if this function is called more than once for the same webContents.
@@ -110,6 +172,8 @@ function createWindow() {
       sandbox: true
     }
   });
+
+  extendMenuWithAbout(() => win);
 
   // If it was maximized last time, re-maximize after creation
   if (saved?.isMaximized) {
