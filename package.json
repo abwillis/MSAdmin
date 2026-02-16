@@ -71,7 +71,7 @@
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "copilot-for-linux",
+      "shortcutName": "msadmin_center-for-linux",
       "deleteAppDataOnUninstall": false,
       "installerIcon": "assets/win/icon.ico",
       "uninstallerIcon": "assets/win/icon.ico",
