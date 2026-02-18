@@ -300,6 +300,80 @@ function extendMenuWithAbout(getMainWindow) {
   Menu.setApplicationMenu(menu);
 }
 
+// --- Explicit app menu (fixes View → Reload being a no-op in some environments) ---
+// Ensures Reload targets the embedded adminView (not the chrome window).
+function installApplicationMenu(win, adminView) {
+  const getAdminWC = () => adminView?.webContents;
+
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
+        // Find items are appended below by addFindToApplicationMenu(...)
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            const wc = getAdminWC();
+            if (wc && !wc.isDestroyed()) wc.reload();
+          }
+        },
+        {
+          label: 'Hard Reload',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            const wc = getAdminWC();
+            if (wc && !wc.isDestroyed()) wc.reloadIgnoringCache();
+          }
+        },
+        { type: 'separator' },
+        { role: 'toggleDevTools' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About',
+          click: () => showAboutDialog(win)
+        }
+      ]
+    }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+
+  // Keep your existing Find menu behavior (duplicate-safe)
+  addFindToApplicationMenu(win, () => adminView.webContents);
+
+  // Re-apply so Linux DEs refresh the menu
+  Menu.setApplicationMenu(Menu.getApplicationMenu());
+}
+
 function attachContextMenuCopyReload(wc) {
   // Avoid duplicate menus if this function is called more than once for the same webContents.
   if (wc.__msadminContextMenuAttached) return;
@@ -409,8 +483,6 @@ function createWindow() {
     }
   });
 
-  extendMenuWithAbout(() => win);
-
   // If it was maximized last time, re-maximize after creation
   if (saved?.isMaximized) {
     win.maximize();
@@ -428,8 +500,8 @@ function createWindow() {
     }
   });
 
-  // Add Edit → Find… (Ctrl+F) targeting the embedded admin view
-  addFindToApplicationMenu(win, () => adminView.webContents);
+ // Install explicit application menu (includes View → Reload targeting adminView)
+ installApplicationMenu(win, adminView);
 
   // IPC handlers for find modal (targets adminView.webContents)
   if (!ipcMain.listenerCount('find-modal-submit')) {
