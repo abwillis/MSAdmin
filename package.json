@@ -1,6 +1,6 @@
 {
   "name": "MSAdmin_Center-for-linux",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "MSAdmin Center for Linux",
   "main": "main.js",
   "scripts": {
@@ -89,7 +89,7 @@
   },
   "license": "BSD 3-Clause License",
   "devDependencies": {
-    "electron": "^41.2.0",
+    "electron": "^41.2.1",
     "electron-builder": "^26.4.0"
   },
   "dependencies": {
